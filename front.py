@@ -1,8 +1,11 @@
 import gradio as gr
 import numpy as np
+import PIL
+from app import process_image
 
-def greet(text, image:np.ndarray, difficulty:str) -> str:
-    return difficulty
+def greet(text, image:PIL.Image.Image, difficulty:str) -> tuple[str,str]:
+    response = process_image(image)
+    return "# Рецепт", response
 
 demo = gr.Interface(
     fn=greet,
@@ -10,9 +13,11 @@ demo = gr.Interface(
             # Генератор рецептів
             Завантажте зображення наявних продуктів.
             """),
-            gr.Image(label="Зображення"), 
+            gr.Image(label="Зображення", type="pil"), 
             gr.Radio(["Low", "Medium", "Hard"], label="Складність", info="Якої складності рецепт?")],
-    outputs=[gr.Textbox(label="Рецепт")],
+    outputs=[gr.Markdown("""
+            # Рецепт
+            """), gr.Markdown()],
     allow_flagging="never",
 )
 
