@@ -14,7 +14,7 @@ demo = gr.Interface(
             Завантажте зображення наявних продуктів.
             """),
             gr.Image(label="Зображення", type="pil"), 
-            gr.Radio(["Low", "Medium", "Hard"], label="Складність", info="Якої складності рецепт?")],
+            gr.Radio(["Легкий", "Середній", "Важкий"], label="Складність рецепту", info="Якої складності рецепт?")],
     outputs=[gr.Markdown("""
             # Рецепт
             """), gr.Markdown()],
