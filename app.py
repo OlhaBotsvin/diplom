@@ -10,11 +10,11 @@ from ingredient_recognition import IngredientRecognizer
 from recipe_generator import RecipeGenerator
 from openai import OpenAI
 
-# Configure logging
+# Налаштування логування
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
+# Завантаження змінних середовища з .env файлу
 load_dotenv()
 
 # Перевірка наявності API ключів
@@ -29,10 +29,9 @@ if not openai_api_key:
     logger.error("OPENAI_API_KEY не знайдено в .env файлі")
     raise ValueError("OPENAI_API_KEY не знайдено. Додайте ключ у .env файл")
 
-# Initialize OpenAI client
 openai_client = OpenAI(api_key=openai_api_key)
 
-# Initialize recognizer and generator
+# Ініціалізація класів для розпізнавання інгредієнтів та генерації рецептів
 ingredient_recognizer = IngredientRecognizer(api_key=gemini_api_key)  # Gemini для розпізнавання
 recipe_generator = RecipeGenerator(openai_client)  # o4-mini для генерації рецептів
 
@@ -73,12 +72,11 @@ async def recipe_generation(image_path: str, difficulty: str) -> tuple[str, str,
         if not is_valid:
             return "# Помилка", "", message
         
-        # Convert PIL image to bytes
+        # Перетворити зображення в байти для Gemini
         buffered = io.BytesIO()
         image.save(buffered, format="JPEG", quality=95)
         image_bytes = buffered.getvalue()
         
-        # Step 1: Recognize ingredients with Gemini
         logger.info("Розпізнавання інгредієнтів...")
         ingredients = await ingredient_recognizer.recognize_from_image_bytes(image_bytes)
         
@@ -89,7 +87,6 @@ async def recipe_generation(image_path: str, difficulty: str) -> tuple[str, str,
         ingredients_text = "## Розпізнані інгредієнти:\n" + ", ".join(ingredients)
         logger.info(f"Розпізнані інгредієнти: {ingredients}")
         
-        # Step 2: Generate recipe with o4-mini using difficulty level
         difficulty_map = {
             "Легкий": "легкий",
             "Середній": "середній",
@@ -107,9 +104,9 @@ async def recipe_generation(image_path: str, difficulty: str) -> tuple[str, str,
             message = modified_recipe_data.get("message", "З цих інгредієнтів неможливо створити смачну страву. Спробуйте завантажити фото з іншими продуктами.")
             return "# Несумісні інгредієнти", ingredients_text, f"{message}"
         
-        # Format recipe output
+        # Якщо рецепти знайдені, форматуємо їх
         if modified_recipe_data.get("recipes"):
-            recipe = modified_recipe_data["recipes"][0]  # Use the first recipe
+            recipe = modified_recipe_data["recipes"][0]  
             recipe_text = f"## {recipe.get('name', 'Рецепт')}\n\n"
             
             recipe_text += "### Інгредієнти:\n"
@@ -119,7 +116,7 @@ async def recipe_generation(image_path: str, difficulty: str) -> tuple[str, str,
             recipe_text += "\n### Інструкції:\n"
             instructions = recipe.get('instructions', 'Інструкції відсутні')
             
-            # Переконуємося, що інструкції мають правильне форматування
+            
             if "\\n" in instructions:
                 instructions = instructions.replace("\\n", "\n")
                 
@@ -143,7 +140,7 @@ async def recipe_generation(image_path: str, difficulty: str) -> tuple[str, str,
             
             return "# Рецепт", ingredients_text, recipe_text
         else:
-            # If no recipes could be generated
+            # Якщо рецепт не знайдено, виводимо повідомлення
             message = modified_recipe_data.get("message", "На жаль, з цих інгредієнтів неможливо створити повноцінний рецепт.")
             return "# Результат аналізу", ingredients_text, f"{message}"
     
@@ -153,16 +150,14 @@ async def recipe_generation(image_path: str, difficulty: str) -> tuple[str, str,
 
 def clear_outputs():
     """Функція для очищення всіх полів інтерфейсу"""
-    # Повертаємо None для всіх компонентів, включаючи радіокнопки складності
     return None, None, "", "", ""
 
-# Create a Gradio interface
+# Функція для створення інтерфейсу Gradio
 with gr.Blocks() as demo:
     gr.Markdown("# Генератор рецептів")
     
     with gr.Row():
         with gr.Column():
-            # Максимально спрощений компонент Image без усіх проблемних параметрів
             image_input = gr.Image(
                 label="Зображення продуктів",
                 type="filepath",
@@ -214,5 +209,4 @@ with gr.Blocks() as demo:
     """)
 
 if __name__ == "__main__":
-    # Запуск на порту 7861 як було в оригінальному коді
     demo.launch(server_name="127.0.0.1", server_port=7861)

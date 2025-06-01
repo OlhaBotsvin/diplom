@@ -6,7 +6,6 @@ from pydantic import BaseModel
 import logging
 import os
 
-# Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -21,15 +20,12 @@ class IngredientRecognizer:
         Args:
             api_key: Gemini API key (optional, will use env var if not provided)
         """
-        # Use provided API key or get from environment
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise ValueError("Gemini API key is required. Provide it directly or set GEMINI_API_KEY environment variable.")
         
-        # Initialize Gemini API
         genai.configure(api_key=self.api_key)
         
-        # Create model instance for Gemini 2.0 Flash
         self.model = GenerativeModel(model_name="gemini-2.0-flash")
         
     async def recognize_from_image_bytes(self, image_bytes: bytes) -> List[str]:
@@ -43,10 +39,9 @@ class IngredientRecognizer:
             List of recognized ingredients
         """
         try:
-            # Encode the image as base64
+            # Convert image bytes to base64
             base64_image = base64.b64encode(image_bytes).decode("utf-8")
             
-            # Create prompt with image for Gemini
             prompt = """Ти експерт з розпізнавання продуктів харчування на фотографіях.
 
 ЗАВДАННЯ: Ідентифікувати всі продукти на фото і вказати точну кількість згідно правил.
@@ -111,7 +106,6 @@ class IngredientRecognizer:
 
 Перевір свою відповідь перед відправкою."""
 
-            # Call Gemini API with image
             response = self.model.generate_content(
                 contents=[
                     {
@@ -128,20 +122,15 @@ class IngredientRecognizer:
                 generation_config={"temperature": 0.0}
             )
             
-            # Extract ingredients from the response
             ingredients_text = response.text.strip()
             
-            # Parse the list of ingredients (assuming comma-separated)
             if "," in ingredients_text:
                 ingredients = [item.strip().lower() for item in ingredients_text.split(",")]
             else:
-                # Handle the case where there are no commas
                 ingredients = [item.strip().lower() for item in ingredients_text.split("\n") if item.strip()]
-                # If still no items found, just use the whole text
                 if not ingredients:
                     ingredients = [ingredients_text.lower()]
             
-            # Remove any periods at the end
             ingredients = [ing[:-1] if ing.endswith('.') else ing for ing in ingredients]
             
             return ingredients

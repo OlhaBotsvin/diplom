@@ -4,7 +4,6 @@ import logging
 import json
 import os
 
-# Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -16,7 +15,6 @@ class RecipeGenerator:
         Args:
             openai_client: OpenAI client instance (optional, will create new one if not provided)
         """
-        # Use provided client or create new one
         if openai_client:
             self.client = openai_client
         else:
@@ -43,10 +41,8 @@ class RecipeGenerator:
                 "складний": "складні техніки, 7+ кроків, понад 60 хвилин, комплексні методи приготування"
             }
             
-            # Визначаємо рекомендації відповідно до обраної складності
             diff_guide = difficulty_guides.get(difficulty.lower(), difficulty_guides["середній"])
             
-            # Покращений промпт з впливом складності
             prompt = f"""
 Ти досвідчений шеф-кухар. Створи смачний рецепт зі списку інгредієнтів: {', '.join(ingredients)}.
 
@@ -96,10 +92,8 @@ class RecipeGenerator:
   "message": "З цих інгредієнтів неможливо створити смачну страву. Спробуйте завантажити фото з іншими продуктами."
 }}"""
             
-            # Визначаємо параметри запиту
             model = "o4-mini"
             
-            # Створюємо параметри запиту без температури
             completion_params = {
                 "model": model,
                 "messages": [
@@ -108,21 +102,18 @@ class RecipeGenerator:
                         "content": prompt,
                     },
                 ],
-                "response_format": {"type": "json_object"}  # Вказуємо, що очікуємо JSON відповідь
+                "response_format": {"type": "json_object"}  
             }
             
-            # Виконуємо запит без параметра температури
             completion = self.client.chat.completions.create(**completion_params)
             
             text = completion.choices[0].message.content.strip()
             
             try:
-                # Просто парсимо JSON напряму
                 recipe_data = json.loads(text)
                 return recipe_data
             except json.JSONDecodeError as e:
                 logger.error(f"Error parsing recipe JSON: {e}")
-                # Повертаємо базовий шаблон з повідомленням про помилку
                 return {
                     "message": f"На жаль, не вдалося створити рецепт з цих інгредієнтів: {str(e)}",
                     "recipes": []
